@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabaseBrowserClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export default function ResetPasswordPage() {
@@ -9,7 +9,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = supabaseBrowserClient;
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();

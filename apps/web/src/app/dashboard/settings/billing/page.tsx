@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 
 type Plan = {
   id: string
@@ -56,7 +56,7 @@ export default function BillingPage() {
   const [currentPlan, setCurrentPlan] = useState('hook')
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
 
   useEffect(() => {
     async function getPlan() {

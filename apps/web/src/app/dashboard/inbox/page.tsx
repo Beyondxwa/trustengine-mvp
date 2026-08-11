@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 import { FeedbackDetail } from '@/components/dashboard/feedback-detail'
 
 type AIData = {
@@ -56,7 +56,7 @@ export default function InboxPage() {
     sort_order: 'desc',
   })
 
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
 
   // Fetch user's first tenant on mount
   useEffect(() => {

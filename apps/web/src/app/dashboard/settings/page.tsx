@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 import { BusinessSettings } from '@/components/dashboard/settings-business'
 import { TeamSettings } from '@/components/dashboard/settings-team'
 import { ProfileSettings } from '@/components/dashboard/settings-profile'
@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('business')
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
 
   useEffect(() => {
     async function getTenant() {

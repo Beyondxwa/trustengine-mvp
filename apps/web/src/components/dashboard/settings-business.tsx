@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 
 type Tenant = {
   id: string
@@ -20,7 +20,7 @@ type ReviewPlatform = {
 }
 
 export function BusinessSettings({ tenantId }: { tenantId: string }) {
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [platforms, setPlatforms] = useState<ReviewPlatform[]>([])
   const [loading, setLoading] = useState(true)

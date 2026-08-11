@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabaseBrowserClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = supabaseBrowserClient;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +36,11 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-8 shadow-lg">
+        <div style={{padding: '10px', background: '#fee', color: '#900', fontSize: '12px', wordBreak: 'break-all'}}>
+          DEBUG SUPABASE URL: {typeof window !== 'undefined' ? 'https://glpemdsqzcawrlnryppn.supabase.co' : 'SSR'}
+          <br/>
+          DEBUG KEY LENGTH: {typeof window !== 'undefined' ? 200 : 0}
+        </div>
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">TrustEngine</h1>
           <p className="mt-2 text-gray-600">Sign in to your dashboard</p>

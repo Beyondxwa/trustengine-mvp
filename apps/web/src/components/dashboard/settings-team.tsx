@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 
 type Member = {
   user_id: string
@@ -18,7 +18,7 @@ type Invite = {
 }
 
 export function TeamSettings({ tenantId }: { tenantId: string }) {
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
   const [loading, setLoading] = useState(true)

@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 import { QRCodeSVG } from 'qrcode.react'
 
 type QRSessionData = {
@@ -19,7 +19,7 @@ export default function QRPage() {
   const [timeLeft, setTimeLeft] = useState<number>(0)
   const [copied, setCopied] = useState(false)
 
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
 
   // Fetch tenant
   useEffect(() => {

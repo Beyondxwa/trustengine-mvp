@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { supabaseBrowserClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function UpdatePasswordPage() {
@@ -10,7 +10,7 @@ export default function UpdatePasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = supabaseBrowserClient;
 
   useEffect(() => {
     // Check if we have a session (user clicked email link)

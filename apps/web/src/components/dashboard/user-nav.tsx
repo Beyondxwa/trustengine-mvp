@@ -1,13 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 
 export function UserNav({ email }: { email?: string }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

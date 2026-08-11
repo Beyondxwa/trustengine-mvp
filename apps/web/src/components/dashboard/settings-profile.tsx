@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabaseBrowserClient } from '@/lib/supabase/client'
 
 export function ProfileSettings() {
-  const supabase = createClient()
+  const supabase = supabaseBrowserClient
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [updating, setUpdating] = useState(false)
