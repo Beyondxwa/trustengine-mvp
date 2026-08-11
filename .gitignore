@@ -16,6 +16,8 @@ web-build/
 .env.local
 .env.*.local
 VERCEL_ENV_CHECKLIST.md
+VERCEL_ENV_VARS.md
+EDGE_FUNCTION_SECRETS.md
 
 # Turbo
 .turbo
@@ -41,3 +43,5 @@ coverage/
 
 # Supabase local CLI state
 supabase/.temp/
+.vercel
+.env*

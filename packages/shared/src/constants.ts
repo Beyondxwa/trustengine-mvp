@@ -2,8 +2,8 @@
 // Shared across web, mobile, and backend
 
 export const APP_NAME = 'TrustEngine';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://TRUSTENGINE_PROD_URL';
-export const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://TRUSTENGINE_PROD_URL';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://trustengine-mvp-8vxb.vercel.app';
+export const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || 'https://trustengine-mvp-8vxb.vercel.app';
 
 // Plan Limits
 export const PLAN_LIMITS = {

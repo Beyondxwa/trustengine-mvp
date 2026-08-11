@@ -170,7 +170,7 @@ serve(async (req) => {
           email: invite.email,
           role: invite.role,
           expires_at: invite.expires_at,
-          invite_url: `https://TRUSTENGINE_PROD_URL/invite?token=${invite.token}`,
+          invite_url: `https://trustengine-mvp-8vxb.vercel.app/invite?token=${invite.token}`,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

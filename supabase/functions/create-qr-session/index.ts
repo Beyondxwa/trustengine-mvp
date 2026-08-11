@@ -126,7 +126,8 @@ serve(async (req) => {
     if (insertError) throw new Error(insertError.message);
 
     // ── 6. Return ──
-    const qrUrl = `https://trustengine-mvp-8vxb.vercel.app/${tenantSlug}/review?token=${token}`;
+    const appUrl = (Deno.env.get("APP_URL") || "https://trustengine-mvp-8vxb.vercel.app").replace(/\/$/, "");
+    const qrUrl = `${appUrl}/${tenantSlug}/review?token=${token}`;
     return new Response(
       JSON.stringify({
         success: true,

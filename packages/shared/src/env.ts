@@ -34,8 +34,8 @@ const envSchema = z.object({
   EXPO_ACCESS_TOKEN: z.string().min(1),
   
   // App
-  APP_URL: z.string().url().default('https://TRUSTENGINE_PROD_URL'),
-  ADMIN_URL: z.string().url().default('https://TRUSTENGINE_PROD_URL'),
+  APP_URL: z.string().url().default('https://trustengine-mvp-8vxb.vercel.app'),
+  ADMIN_URL: z.string().url().default('https://trustengine-mvp-8vxb.vercel.app'),
   JWT_SECRET: z.string().min(32),
   
   // Monitoring
