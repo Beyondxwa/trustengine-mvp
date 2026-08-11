@@ -1,0 +1,33 @@
+{
+  "extends": "../../packages/config/tsconfig-base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@trustengine/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@trustengine/ui": [
+        "../../packages/ui/src/index.ts"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "noEmit": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -1,0 +1,17 @@
+VERCEL DASHBOARD FIX — 15 SECONDS
+
+1. Go to: https://vercel.com/beyond-x3/trustengine-mvp-8vxb/settings
+2. Click "Build & Development Settings"
+3. Set these EXACT values (delete everything else in each field):
+
+   Framework Preset: Next.js
+   Root Directory: apps/web
+   Build Command: npm run build
+   Output Directory: .next
+   Install Command: npm install
+
+4. Click SAVE
+5. Go to Deployments tab → Click latest deployment → Redeploy
+
+DO NOT paste markdown arrows or explanations into the fields.
+Only the clean command text.

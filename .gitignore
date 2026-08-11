@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.expo/
+web-build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+VERCEL_ENV_CHECKLIST.md
+
+# Turbo
+.turbo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Misc
+*.pem
+*.tsbuildinfo
+
+# Supabase local CLI state
+supabase/.temp/
