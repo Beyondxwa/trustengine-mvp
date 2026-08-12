@@ -6,3 +6,5 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 export const supabaseBrowserClient = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Redeploy trigger: 08/11/2026 21:33:22
+
+// Deploy fix: 08/11/2026 22:07:19
