@@ -36,21 +36,41 @@ def _allow() -> dict:
 
 
 # Each entry: (compiled regex, deny/ask factory taking the matched command)
+#
+# The "rm" rule intentionally matches ANY invocation of rm — not just
+# `-rf` — because the doctrine is "never hard delete", full stop. Flags
+# (short, combined, separated, or long-form like --recursive --force) do
+# not change that a plain `rm important.env` or `rm login.tsx` is still a
+# permanent, unrecoverable delete. We only require that "rm" appears at a
+# command boundary (start of the string, or right after a shell command
+# separator: ; && || | or a newline, with optional leading whitespace) so
+# we don't false-positive on substrings like "confirm" or "perform".
+_CMD_BOUNDARY = r"(?:^|;|&&|\|\||\||\n)\s*"
 DENY_RULES = [
     (
-        re.compile(r"\brm\s+(-\w*r\w*f\w*|-\w*f\w*r\w*)\b"),
+        re.compile(_CMD_BOUNDARY + r"rm\b"),
         lambda cmd: _deny(
-            "Blocked a recursive force-delete (rm -rf).",
-            "rm -rf is blocked by policy. Archive instead: "
-            "mv <path> .archive/<YYYY-MM-DD>/<path>",
+            "Blocked rm (any invocation — hard deletes are never allowed).",
+            "rm is blocked by policy, with or without flags. Archive "
+            "instead: mv <path> .archive/<YYYY-MM-DD>/<path>",
         ),
     ),
     (
-        re.compile(r"\brmdir\b"),
+        re.compile(_CMD_BOUNDARY + r"rmdir\b"),
         lambda cmd: _deny(
             "Blocked a directory delete (rmdir).",
             "rmdir is blocked by policy. Archive instead: "
             "mv <path> .archive/<YYYY-MM-DD>/<path>",
+        ),
+    ),
+    (
+        re.compile(r"\bfind\b[^;&|\n]*(-delete\b|-exec\s+rm\b)"),
+        lambda cmd: _deny(
+            "Blocked find ... -delete / find ... -exec rm (bulk hard delete).",
+            "find -delete and find -exec rm are blocked by policy — they "
+            "are hard deletes with no rm needed to trigger this rule. "
+            "Archive matched files instead, e.g. by moving them into "
+            "mv -t .archive/<YYYY-MM-DD>/ <matches>.",
         ),
     ),
     (
@@ -167,11 +187,12 @@ DENY_RULES = [
         ),
     ),
     (
-        re.compile(r"\b(DROP|TRUNCATE)\s+TABLE\b", re.IGNORECASE),
+        re.compile(r"\b(DROP|TRUNCATE)\s+(TABLE|DATABASE|SCHEMA)\b", re.IGNORECASE),
         lambda cmd: _deny(
-            "Blocked a destructive SQL statement (DROP/TRUNCATE TABLE).",
-            "DROP/TRUNCATE TABLE is blocked by policy. Confirm explicitly "
-            "with the user first, and prefer a reversible migration.",
+            "Blocked a destructive SQL statement (DROP/TRUNCATE TABLE/DATABASE/SCHEMA).",
+            "DROP/TRUNCATE TABLE, DATABASE, or SCHEMA is blocked by policy. "
+            "Confirm explicitly with the user first, and prefer a "
+            "reversible migration.",
         ),
     ),
     (
