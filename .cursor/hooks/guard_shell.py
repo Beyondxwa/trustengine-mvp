@@ -74,6 +74,37 @@ DENY_RULES = [
         ),
     ),
     (
+        # xargs piping into rm/rmdir routes around the plain-rm command-boundary
+        # rule above (the "rm" here never sits at a command boundary — it's an
+        # argument to xargs). Flags between xargs and rm/rmdir are allowed
+        # (xargs -0 rm -f, xargs -n1 rm, etc).
+        re.compile(r"\bxargs\b(?:\s+-\S+)*\s+(rm|rmdir)\b"),
+        lambda cmd: _deny(
+            "Blocked xargs piping into rm/rmdir (hard delete).",
+            "xargs ... rm/rmdir is blocked by policy — it is still a hard "
+            "delete, just routed through xargs. Archive instead: "
+            "mv <path> .archive/<YYYY-MM-DD>/<path>",
+        ),
+    ),
+    (
+        # Deletion via an interpreter's inline code string (python3 -c "...",
+        # node -e "...") also routes around the plain-rm rule since there is
+        # no shell "rm" token at all.
+        re.compile(
+            r"(?:^|\s)-(c|e)\s[\s\S]*?"
+            r"\b(shutil\.rmtree|os\.remove|os\.unlink|os\.rmdir"
+            r"|fs\.rmSync|fs\.rmdirSync|fs\.unlinkSync"
+            r"|rmSync|rmdirSync|unlinkSync)\b"
+        ),
+        lambda cmd: _deny(
+            "Blocked an inline interpreter delete (-c/-e script calling a filesystem-delete function).",
+            "Calling shutil.rmtree / os.remove / os.unlink / os.rmdir / "
+            "fs.rmSync / fs.rmdirSync / fs.unlinkSync from an inline -c or "
+            "-e script is blocked by policy — it is still a hard delete. "
+            "Archive instead: mv <path> .archive/<YYYY-MM-DD>/<path>",
+        ),
+    ),
+    (
         re.compile(r"\bgit\s+push\b.*(--force(-with-lease)?\b|\s-f\b)"),
         lambda cmd: _deny(
             "Blocked a force push.",
