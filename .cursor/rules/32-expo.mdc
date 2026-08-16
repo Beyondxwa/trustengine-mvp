@@ -1,0 +1,31 @@
+---
+description: Expo / React Native mobile app doctrine - client secrets, storage, validation, RLS, and UI-state rules
+globs: ["apps/mobile/**", "**/app/**/*.tsx"]
+alwaysApply: false
+---
+
+# Expo / React Native doctrine
+
+- Only `EXPO_PUBLIC_*` values may exist client-side. Never embed a Supabase
+  `service_role` key, a Stripe `sk_live_` or `whsec_` secret, or a Twilio
+  auth token in the app — those belong only in Edge Functions / server-side
+  code.
+- Store session tokens in `expo-secure-store`, chunking values past 2048
+  bytes (SecureStore has a per-item size limit on some platforms). Never use
+  `AsyncStorage` for session/auth tokens on native.
+- Validate every environment variable and every Edge Function response with
+  Zod before trusting its shape.
+- Row Level Security (RLS) is the real authorization boundary. Client-side
+  filtering is a UX nicety, never a security control — assume any client
+  query can be replayed with arbitrary parameters.
+- Every query must be scoped by `tenant_id` (or the tenant-equivalent key) —
+  do not rely on the client to only ask for its own tenant's data.
+- Every screen must explicitly handle all four states: loading, empty,
+  error, and success. No screen may silently render nothing for a state it
+  didn't anticipate.
+- Every `FlatList` needs a stable `keyExtractor` (not array index unless the
+  list is provably static).
+- No placeholder screens and no dead buttons — every interactive element
+  must do the thing it claims to do.
+- The gate for this app is `tsc --noEmit` plus lint. Both must pass before
+  reporting mobile work as done.

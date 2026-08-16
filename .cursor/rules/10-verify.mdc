@@ -1,0 +1,31 @@
+---
+description: Verification doctrine - prove work with real command output before reporting success
+alwaysApply: true
+---
+
+# Verify before delivering
+
+- Detect the package manager from the lockfile that is actually present in
+  the repo (`package-lock.json` → npm, `pnpm-lock.yaml` → pnpm, `yarn.lock` →
+  yarn, `bun.lockb` → bun). Do not guess.
+- Read the real `scripts` block of every workspace/package touched before
+  claiming a command exists.
+- Run typecheck, lint, and test with that package manager for every touched
+  workspace. Paste the real terminal output when reporting.
+- Never report success over a red run. Never claim a check passed without
+  having actually run it this turn.
+- Never run `eas build` (or any other paid cloud build) as a verification
+  step — it costs money, is slow, and proves nothing a local
+  typecheck/lint/test pass doesn't already prove.
+- Before reporting a change as finished, read the full `git diff` line by
+  line — including files not intentionally touched — to catch accidental
+  debug code, leftover comments, and unrelated churn.
+- Report using this shape, answer first:
+
+```
+DONE: <what shipped, one line>
+CHANGED: <files/areas touched>
+VERIFIED: <real command output proving it works>
+RISK: <what could still be wrong, or "none identified">
+NEXT: <follow-up work, or "none">
+```
