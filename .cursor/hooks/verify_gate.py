@@ -59,6 +59,23 @@ PLACEHOLDER_TOKEN_RULES = [
 PLACEHOLDER_COMMENT_RE = re.compile(r"placeholder", re.IGNORECASE)
 JSX_PLACEHOLDER_PROP_RE = re.compile(r"placeholder\s*=", re.IGNORECASE)
 
+# Labels for which a match inside a quoted string literal is prose/data, not
+# real code, and should not be flagged (e.g. logger.info("no console.log(
+# in prod") is a log message, not a leftover debug statement).
+QUOTED_STRING_EXEMPT_LABELS = {"console.log(", ": any"}
+
+_QUOTED_SPAN_RE = re.compile(
+    r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`"
+)
+
+
+def _quoted_spans(line: str):
+    return [(m.start(), m.end()) for m in _QUOTED_SPAN_RE.finditer(line)]
+
+
+def _in_any_span(pos: int, spans) -> bool:
+    return any(start <= pos < end for start, end in spans)
+
 
 def run(cmd, cwd=None, timeout=COMMAND_TIMEOUT_SECONDS):
     try:
@@ -263,9 +280,26 @@ def get_lines_for_untracked_file(path: str):
 
 
 def scan_line_for_placeholders(line: str, path: str, line_no: int, findings: list):
+    quoted_spans = None
+    comment_idx = line.find("//")
+
     for pattern, label in PLACEHOLDER_TOKEN_RULES:
-        if pattern.search(line):
-            findings.append(f"{path}:{line_no}: forbidden pattern `{label}` -> {line.strip()[:120]}")
+        match = pattern.search(line)
+        if not match:
+            continue
+
+        if label in QUOTED_STRING_EXEMPT_LABELS:
+            if quoted_spans is None:
+                quoted_spans = _quoted_spans(line)
+            if _in_any_span(match.start(), quoted_spans):
+                continue
+
+        if label == ": any" and comment_idx != -1 and match.start() > comment_idx:
+            # Prose after a `//` comment marker (e.g. "// returns: any
+            # shape"), not a real `: any` type annotation.
+            continue
+
+        findings.append(f"{path}:{line_no}: forbidden pattern `{label}` -> {line.strip()[:120]}")
 
     if PLACEHOLDER_COMMENT_RE.search(line) and not JSX_PLACEHOLDER_PROP_RE.search(line):
         findings.append(
