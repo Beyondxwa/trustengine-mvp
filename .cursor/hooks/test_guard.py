@@ -38,12 +38,16 @@ DENY_CASES = [
     "find . -print0 | xargs -0 rm -f",
     "python3 -c \"import shutil; shutil.rmtree('apps')\"",
     "node -e \"require('fs').rmSync('dist',{recursive:true})\"",
+    "supabase db reset --linked",
 ]
 
 ASK_CASES = [
     "git push origin feat",
     "vercel --prod",
     "prisma migrate deploy",
+    "npx supabase functions deploy create-qr-session",
+    "supabase functions deploy invite-staff",
+    "supabase db push",
 ]
 
 ALLOW_CASES = [
@@ -64,6 +68,10 @@ ALLOW_CASES = [
     "echo 'the rm command is blocked'",
     "ls /tmp/rm-test",
     "npm test -- --testPathPattern=alarm",
+    "npx supabase functions serve",
+    "supabase status",
+    "supabase start",
+    "npx supabase gen types typescript",
 ]
 
 

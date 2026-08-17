@@ -252,6 +252,19 @@ DENY_RULES = [
             "blocked by policy — this looks like credential exfiltration.",
         ),
     ),
+    (
+        # supabase db reset drops and recreates the database — against a
+        # linked (real) project this destroys data outright, so it belongs
+        # in the deny tier alongside git reset --hard / terraform destroy,
+        # not the ask tier.
+        re.compile(r"\b(?:npx\s+)?supabase\s+db\s+reset\b"),
+        lambda cmd: _deny(
+            "Blocked supabase db reset (destroys the database).",
+            "supabase db reset is blocked by policy — against a linked "
+            "project it destroys real data. Confirm explicitly with the "
+            "user first.",
+        ),
+    ),
 ]
 
 ASK_RULES = [
@@ -277,6 +290,20 @@ ASK_RULES = [
             "This will run a Prisma migration against a real database.",
             "prisma migrate deploy/reset needs explicit confirmation before "
             "running.",
+        ),
+    ),
+    (
+        # Deploying a Supabase Edge Function (this repo calls
+        # create-qr-session and invite-staff) replaces production behavior
+        # for every user instantly, with no review step — same tier as
+        # `vercel --prod`. `supabase db push` pushes schema changes against
+        # the linked (real) project and belongs here too.
+        re.compile(r"\b(?:npx\s+)?supabase\s+(?:functions\s+deploy|db\s+push)\b"),
+        lambda cmd: _ask(
+            "This will deploy a Supabase Edge Function or push schema changes to a real project.",
+            "supabase functions deploy / supabase db push need explicit "
+            "confirmation before running — they affect production "
+            "instantly with no rollback step.",
         ),
     ),
 ]
