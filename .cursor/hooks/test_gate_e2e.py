@@ -84,6 +84,8 @@ def report(name: str, ok: bool, detail: str) -> None:
 
 
 def test_clean_repo_returns_empty():
+    """A repo with zero changes (nothing staged, unstaged, or untracked)
+    must return {} immediately — there is nothing to verify."""
     tmp_dir = tempfile.mkdtemp(prefix="gate_e2e_clean_")
     try:
         make_repo(tmp_dir)
@@ -101,6 +103,9 @@ def test_clean_repo_returns_empty():
 
 
 def test_loop_count_3_returns_empty():
+    """loop_count >= 3 must short-circuit to {} before any git/diff/script
+    work happens, even when the repo is genuinely dirty with real
+    violations — the anti-loop budget is exhausted, not the violations."""
     tmp_dir = tempfile.mkdtemp(prefix="gate_e2e_loopcount_")
     try:
         make_repo(tmp_dir)
@@ -125,11 +130,13 @@ def test_loop_count_3_returns_empty():
 
 
 def test_new_directory_is_scanned():
-    """THE regression test: a placeholder-riddled file inside a brand-new,
-    entirely untracked directory (apps/mobile/app/(main)/settings/) must
-    still be found. Before the --untracked-files=all fix, `git status
-    --porcelain` collapsed that whole directory into one extension-less
-    entry and the file was never scanned."""
+    """A file inside a brand-new, entirely untracked directory is scanned.
+
+    Before the --untracked-files=all fix, `git status --porcelain`
+    collapsed the whole new directory (apps/mobile/app/(main)/settings/)
+    into one extension-less entry and the file inside it was never
+    scanned, so this exact repro (placeholder comment + Alert.alert +
+    `: any` + console.log() all in one new file) produced zero findings."""
     tmp_dir = tempfile.mkdtemp(prefix="gate_e2e_newdir_")
     try:
         make_repo(tmp_dir)
@@ -170,10 +177,13 @@ def test_new_directory_is_scanned():
 
 
 def test_modified_file_reports_real_line_numbers():
-    """A second regression test for the line-number bug: findings in a
-    MODIFIED (tracked) file must cite the file's real line number, parsed
-    from the diff's @@ hunk header — not the Nth added line across the
-    whole diff."""
+    """A finding in a modified (tracked) file cites its real file line
+    number.
+
+    The line number must come from parsing the diff's `@@ -a,b +c,d @@`
+    hunk header, not from enumerating the collected "+" lines — a file
+    with a violation inserted deep in the file (line 15 of 21) must not be
+    misreported as line 1 (the Nth-added-line-across-the-diff count)."""
     tmp_dir = tempfile.mkdtemp(prefix="gate_e2e_linenos_")
     try:
         make_repo(tmp_dir)
@@ -207,9 +217,11 @@ def test_modified_file_reports_real_line_numbers():
 
 
 def test_green_repo_returns_empty():
-    """The gate must be able to PASS, not just fire: a repo with real
-    (trivial, fast) typecheck/lint/test scripts that all succeed, and a
-    change with no forbidden patterns, must return {}."""
+    """A repo with real passing scripts and a clean diff returns {}.
+
+    Proves the gate can PASS, not just fire: real (trivial, fast)
+    typecheck/lint/test scripts that all succeed, plus a new file with no
+    forbidden patterns, must not produce a false failure."""
     tmp_dir = tempfile.mkdtemp(prefix="gate_e2e_green_")
     try:
         make_repo(tmp_dir)
@@ -246,14 +258,20 @@ def test_green_repo_returns_empty():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def main() -> int:
-    test_clean_repo_returns_empty()
-    test_loop_count_3_returns_empty()
-    test_new_directory_is_scanned()
-    test_modified_file_reports_real_line_numbers()
-    test_green_repo_returns_empty()
+TESTS = [
+    test_clean_repo_returns_empty,
+    test_loop_count_3_returns_empty,
+    test_new_directory_is_scanned,
+    test_modified_file_reports_real_line_numbers,
+    test_green_repo_returns_empty,
+]
 
-    total = 5
+
+def main() -> int:
+    for test_fn in TESTS:
+        test_fn()
+
+    total = len(TESTS)
     passed = total - len(FAILURES)
     print(f"\n{passed}/{total} passed")
 
