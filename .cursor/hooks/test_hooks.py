@@ -118,6 +118,128 @@ def check_verify_gate(line: str, label: str, should_flag: bool, description: str
         FAILURES.append((description, line, should_flag, flagged, findings))
 
 
+# --- verify_gate.py: placeholder-word / RN-identifier false positives ------
+# (bug: the gate flagged real React Native code — placeholderTextColor,
+# getByPlaceholderText, getByPlaceholder — plus TODO/`: any` inside legit
+# UI copy and JSX props, and was missing an Alert.alert("Coming soon")-style
+# dead-button rule entirely.)
+
+MUST_NOT_FLAG_CASES = [
+    (
+        '<TextInput placeholderTextColor="#9CA3AF" secureTextEntry />',
+        "login.tsx",
+        "placeholderTextColor is a core RN TextInput prop, not a placeholder marker",
+    ),
+    (
+        '<TextInput placeholder="Email" placeholderTextColor="#9CA3AF" />',
+        "login.tsx",
+        "a real placeholder= JSX prop (not in a comment) must not be flagged",
+    ),
+    (
+        '<TextInput placeholder="TODO list name" value={name} />',
+        "register.tsx",
+        "TODO inside JSX prop UI copy is not a stub",
+    ),
+    (
+        'await screen.getByPlaceholderText("Email");',
+        "login.test.tsx",
+        "React Native Testing Library's getByPlaceholderText is a standard query",
+    ),
+    (
+        'await page.getByPlaceholder("Email").fill(x);',
+        "login.e2e.ts",
+        "Playwright's getByPlaceholder is a standard query",
+    ),
+    (
+        "const theme = { placeholderColor: '#999' };",
+        "theme.ts",
+        "placeholderColor is a plain identifier, not a placeholder marker",
+    ),
+    (
+        "// this endpoint returns: any shape the server sends",
+        "api.ts",
+        "`: any` inside a // comment is prose (regression guard)",
+    ),
+    (
+        'logger.info("no console.log( in prod");',
+        "log.ts",
+        "console.log( inside a string literal (regression guard)",
+    ),
+    (
+        'const label = "Skip(" + n + ")";',
+        "label.ts",
+        ".skip( is case-sensitive and requires a leading dot; this is not a real .skip( call",
+    ),
+]
+
+MUST_FLAG_CASES = [
+    (
+        "// placeholder: RevenueCat offerings",
+        "purchases.ts",
+        "a real placeholder comment marker must still be flagged",
+    ),
+    (
+        "# placeholder for now",
+        "script.py",
+        "a real placeholder comment marker (Python #) must still be flagged",
+    ),
+    (
+        "// TODO: wire up the reply action",
+        "chat.ts",
+        "a real TODO comment (not inside quotes) must still be flagged",
+    ),
+    (
+        "const data: any = await res.json();",
+        "api.ts",
+        "a real `: any` type annotation must still be flagged",
+    ),
+    (
+        'console.log("submitting", payload);',
+        "form.ts",
+        "a real console.log( call must still be flagged",
+    ),
+    (
+        'it.only("logs in", async () => {',
+        "login.test.ts",
+        "it.only( must still be flagged",
+    ),
+    (
+        'it.skip("flaky", () => {});',
+        "login.test.ts",
+        ".skip( must still be flagged",
+    ),
+    (
+        "// @ts-ignore because types are wrong",
+        "foo.ts",
+        "@ts-ignore must still be flagged",
+    ),
+    (
+        'raise NotImplementedError("later")',
+        "foo.py",
+        "NotImplementedError must still be flagged",
+    ),
+    (
+        'Alert.alert("Coming soon");',
+        "settings.tsx",
+        "Alert.alert('Coming soon') is a shipped dead-button bug and must be flagged (new rule)",
+    ),
+]
+
+
+def check_verify_gate_overall(line: str, path: str, should_flag: bool, description: str) -> None:
+    findings = []
+    verify_gate.scan_line_for_placeholders(line, path, 1, findings)
+    flagged = bool(findings)
+    ok = flagged == should_flag
+    status = "PASS" if ok else "FAIL"
+    print(f"{status}: expect_flag={should_flag!s:<5} got_flag={flagged!s:<5} | {description}")
+    print(f"      path={path} line={line!r}")
+    if findings:
+        print(f"      findings={findings}")
+    if not ok:
+        FAILURES.append((description, line, should_flag, flagged, findings))
+
+
 def main() -> int:
     print("=== secret_scan.py: JWT role-awareness + new token families ===")
     for line, should_flag, description in SECRET_SCAN_CASES:
@@ -127,7 +249,20 @@ def main() -> int:
     for line, label, should_flag, description in VERIFY_GATE_CASES:
         check_verify_gate(line, label, should_flag, description)
 
-    total = len(SECRET_SCAN_CASES) + len(VERIFY_GATE_CASES)
+    print("\n=== verify_gate.py: placeholder-word / RN-identifier — must NOT flag ===")
+    for line, path, description in MUST_NOT_FLAG_CASES:
+        check_verify_gate_overall(line, path, False, description)
+
+    print("\n=== verify_gate.py: placeholder-word / RN-identifier — must flag ===")
+    for line, path, description in MUST_FLAG_CASES:
+        check_verify_gate_overall(line, path, True, description)
+
+    total = (
+        len(SECRET_SCAN_CASES)
+        + len(VERIFY_GATE_CASES)
+        + len(MUST_NOT_FLAG_CASES)
+        + len(MUST_FLAG_CASES)
+    )
     passed = total - len(FAILURES)
     print(f"\n{passed}/{total} passed")
 

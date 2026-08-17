@@ -54,15 +54,28 @@ PLACEHOLDER_TOKEN_RULES = [
     (re.compile(r"\b(it|test|describe)\.only\s*\("), "it/describe/test.only("),
     (re.compile(r"\.skip\s*\("), ".skip("),
     (re.compile(r":\s*any\b"), ": any"),
+    (
+        # The exact bug class this repo actually shipped: a button that
+        # claims to do something but just shows "not built yet" text.
+        re.compile(
+            r"Alert\.alert\s*\([^)]*\b(coming soon|todo|not implemented)\b",
+            re.IGNORECASE,
+        ),
+        "Alert.alert(placeholder message)",
+    ),
 ]
 
-PLACEHOLDER_COMMENT_RE = re.compile(r"placeholder", re.IGNORECASE)
-JSX_PLACEHOLDER_PROP_RE = re.compile(r"placeholder\s*=", re.IGNORECASE)
+# A standalone "placeholder" word — NOT a substring match, so RN/testing
+# identifiers like placeholderTextColor, placeholderColor,
+# getByPlaceholderText, and getByPlaceholder never match (they're one
+# continuous camelCase token with no word boundary around "placeholder").
+PLACEHOLDER_WORD_RE = re.compile(r"\bplaceholder\b", re.IGNORECASE)
 
-# Labels for which a match inside a quoted string literal is prose/data, not
-# real code, and should not be flagged (e.g. logger.info("no console.log(
-# in prod") is a log message, not a leftover debug statement).
-QUOTED_STRING_EXEMPT_LABELS = {"console.log(", ": any"}
+# Labels for which a match inside a quoted string literal is prose/UI copy/
+# data, not real code, and should not be flagged: logger.info("no
+# console.log( in prod") is a log message, and <TextInput placeholder="TODO
+# list name" /> is UI copy, not a stub.
+QUOTED_STRING_EXEMPT_LABELS = {"console.log(", ": any", "TODO", "FIXME"}
 
 _QUOTED_SPAN_RE = re.compile(
     r"\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`"
@@ -75,6 +88,23 @@ def _quoted_spans(line: str):
 
 def _in_any_span(pos: int, spans) -> bool:
     return any(start <= pos < end for start, end in spans)
+
+
+def _comment_start_index(line: str, path: str) -> int:
+    """Return the index where a comment starts on this line, or -1 if the
+    line has no comment marker. `#` is only treated as a comment marker for
+    Python files, since `#` is a normal character elsewhere (hex colors,
+    URL fragments, etc.) and would otherwise cause false positives."""
+    candidates = []
+    for marker in ("//", "/*"):
+        idx = line.find(marker)
+        if idx != -1:
+            candidates.append(idx)
+    if path.endswith(".py"):
+        idx = line.find("#")
+        if idx != -1:
+            candidates.append(idx)
+    return min(candidates) if candidates else -1
 
 
 def run(cmd, cwd=None, timeout=COMMAND_TIMEOUT_SECONDS):
@@ -281,7 +311,7 @@ def get_lines_for_untracked_file(path: str):
 
 def scan_line_for_placeholders(line: str, path: str, line_no: int, findings: list):
     quoted_spans = None
-    comment_idx = line.find("//")
+    comment_idx = _comment_start_index(line, path)
 
     for pattern, label in PLACEHOLDER_TOKEN_RULES:
         match = pattern.search(line)
@@ -301,7 +331,14 @@ def scan_line_for_placeholders(line: str, path: str, line_no: int, findings: lis
 
         findings.append(f"{path}:{line_no}: forbidden pattern `{label}` -> {line.strip()[:120]}")
 
-    if PLACEHOLDER_COMMENT_RE.search(line) and not JSX_PLACEHOLDER_PROP_RE.search(line):
+    # "placeholder" is only a finding when it is a standalone word (so
+    # placeholderTextColor / placeholderColor / getByPlaceholderText /
+    # getByPlaceholder never match — they're one continuous identifier with
+    # no word boundary around "placeholder") AND it sits inside a comment.
+    # A `placeholder="Email"` JSX prop, or UI copy, is not a leftover TODO
+    # marker; a `// placeholder: wire up X later` comment is.
+    word_match = PLACEHOLDER_WORD_RE.search(line)
+    if word_match and comment_idx != -1 and word_match.start() > comment_idx:
         findings.append(
             f"{path}:{line_no}: placeholder comment -> {line.strip()[:120]}"
         )
