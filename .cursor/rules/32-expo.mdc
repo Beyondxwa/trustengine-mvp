@@ -1,11 +1,29 @@
 ---
 description: Expo / React Native mobile app doctrine - client secrets, storage, validation, RLS, and UI-state rules
-globs: ["apps/mobile/**", "**/app/**/*.tsx"]
+globs: ["apps/mobile/**"]
 alwaysApply: false
 ---
 
 # Expo / React Native doctrine
 
+This app's screen navigation is built with **React Navigation**
+(`@react-navigation/native` + `stack` + `bottom-tabs`) and lives entirely
+under `apps/mobile/App.tsx` and `apps/mobile/src/`. Do not introduce a
+file-based routing framework or a second navigation library — it does not
+apply here and would fight the existing architecture. If you are ever
+tempted to create a route-group folder or a dynamic-segment filename to
+express navigation structure, stop: that convention belongs to a different
+router and has no meaning in this codebase.
+
+- Screens live in `src/screens/*Screen.tsx` (e.g. `LoginScreen.tsx`,
+  `SignupScreen.tsx`, `InboxScreen.tsx`, `QRScreen.tsx`,
+  `SettingsScreen.tsx`). Navigators (stack/tab configuration) live in
+  `src/navigation`. Shared state lives in `src/context`; shared
+  clients/helpers (e.g. the Supabase client, Zod schemas) live in `src/lib`.
+- Type navigation params explicitly (e.g. a shared `RootStackParamList` /
+  `TabParamList` passed to `createNativeStackNavigator<...>` /
+  `createBottomTabNavigator<...>`, and typed `useNavigation`/`useRoute`
+  hooks) — do not thread untyped `any` navigation props through screens.
 - Only `EXPO_PUBLIC_*` values may exist client-side. Never embed a Supabase
   `service_role` key, a Stripe `sk_live_` or `whsec_` secret, or a Twilio
   auth token in the app — those belong only in Edge Functions / server-side
@@ -14,7 +32,7 @@ alwaysApply: false
   bytes (SecureStore has a per-item size limit on some platforms). Never use
   `AsyncStorage` for session/auth tokens on native.
 - Validate every environment variable and every Edge Function response with
-  Zod before trusting its shape.
+  Zod before trusting its shape (`zod` is already a dependency).
 - Row Level Security (RLS) is the real authorization boundary. Client-side
   filtering is a UX nicety, never a security control — assume any client
   query can be replayed with arbitrary parameters.
@@ -28,4 +46,5 @@ alwaysApply: false
 - No placeholder screens and no dead buttons — every interactive element
   must do the thing it claims to do.
 - The gate for this app is `tsc --noEmit` plus lint. Both must pass before
-  reporting mobile work as done.
+  reporting mobile work as done. Never run `eas build` as a check — it is a
+  paid cloud build and proves nothing a local typecheck/lint pass doesn't.
