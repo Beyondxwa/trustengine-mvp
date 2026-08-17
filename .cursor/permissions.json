@@ -1,0 +1,27 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "Reading, searching, and browsing any file in the workspace.",
+      "Editing, creating, or refactoring source files in the workspace.",
+      "Installing project dependencies with the workspace's own package manager (e.g. npm install, pnpm install, pip install into a local venv).",
+      "Running build commands (e.g. npm run build, next build, expo export).",
+      "Running lint and format commands (e.g. eslint, prettier, ruff).",
+      "Running typecheck commands (e.g. tsc --noEmit, mypy).",
+      "Running test commands (e.g. jest, pytest, vitest).",
+      "Local git operations that do not rewrite history and do not contact a remote (git status, git diff, git add, git commit, git log, git branch (create/list), git stash, git switch/checkout to an existing local branch)."
+    ],
+    "block_instructions": [
+      "Anything that permanently deletes files or directories (rm -rf, rmdir, git clean -fd) — archive to .archive/<YYYY-MM-DD>/ instead.",
+      "git push, git push --force, git push --force-with-lease.",
+      "git rebase, git filter-branch, or any other history rewrite.",
+      "git reset --hard.",
+      "Deleting a git branch, local or remote.",
+      "sudo or any privilege escalation.",
+      "Deploys or publishes of any kind (vercel/fly/netlify deploy, npm publish, app store submissions, eas build/submit).",
+      "terraform apply, terraform destroy, or kubectl delete.",
+      "Database migrations against a non-local / non-ephemeral database (e.g. prisma migrate deploy, prisma migrate reset against a real environment).",
+      "Sending a message, email, or notification to a real person on the user's behalf.",
+      "Anything that spends real money (paid API calls beyond normal usage, paid cloud builds, purchasing/upgrading a plan, infrastructure that incurs billing)."
+    ]
+  }
+}

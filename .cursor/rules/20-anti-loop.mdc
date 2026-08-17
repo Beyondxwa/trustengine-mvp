@@ -1,0 +1,34 @@
+---
+description: Anti-loop doctrine - bounded retries, no cheating to get green, no hard deletes, confirm destructive actions
+alwaysApply: true
+---
+
+# Anti-loop and safety doctrine
+
+- Take at most 3 attempts at any single error.
+  - Attempt 1: try the most likely fix.
+  - Attempt 2: instrument before editing again — add logs, a smaller repro,
+    a debugger, or a failing test to see what is actually happening instead
+    of guessing.
+  - Attempt 3: question the assumption that hasn't been challenged yet, and
+    try the fix that follows from that.
+- If the third attempt fails, stop and report exactly:
+
+```
+TRIED: <what was attempted, in order>
+EVIDENCE: <what was observed at each step>
+LIKELY: <best-supported theory of the root cause>
+NEED: <what would unblock progress>
+```
+
+- Never skip, delete, or weaken a test to force a green run.
+- Never silence a real problem with `@ts-ignore`, `# type: ignore`, a bare
+  `any`, or `except: pass`.
+- Never hard delete. Do not run `rm -rf`, `rmdir`, or otherwise permanently
+  remove files or history. Move things instead:
+  `mv <path> .archive/<YYYY-MM-DD>/<path>`.
+- Confirm first, explicitly, before: a force push, any history rewrite
+  (rebase, `filter-branch`, amending pushed commits), deleting a branch or a
+  file outright, a destructive database migration, `terraform apply` or
+  `terraform destroy`, a deploy or publish, or anything that spends real
+  money.
