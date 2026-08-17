@@ -135,7 +135,19 @@ def is_excluded_path(path: str) -> bool:
 
 
 def parse_changed_files(porcelain_output: str):
-    """Return list of (status, path) tuples from `git status --porcelain`."""
+    """Return list of (status, path) tuples from `git status --porcelain
+    --untracked-files=all`.
+
+    --untracked-files=all is required: plain `git status --porcelain`
+    collapses a fully-untracked directory into a single entry ending in
+    "/" (e.g. "?? apps/mobile/app/(main)/settings/") without listing the
+    files inside it, which made every file in a newly created directory
+    invisible to the placeholder/cheat scan below. With
+    --untracked-files=all every individual file is listed. As a defensive
+    second layer, any remaining entry that still ends in a path separator
+    (a bare directory marker, from an older git version or an edge case)
+    is dropped here rather than trusted.
+    """
     files = []
     for line in porcelain_output.splitlines():
         if not line.strip():
@@ -144,7 +156,10 @@ def parse_changed_files(porcelain_output: str):
         rest = line[3:]
         if " -> " in rest:
             rest = rest.split(" -> ", 1)[1]
-        files.append((status, rest.strip().strip('"')))
+        rest = rest.strip().strip('"')
+        if not rest or rest.endswith("/") or rest.endswith(os.sep):
+            continue
+        files.append((status, rest))
     return files
 
 
@@ -283,8 +298,17 @@ def check_python_workspace(workspace_dir: str, failures: list, evidence: list):
             failures.append(f"{label} failed (exit {code})")
 
 
+_HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
 def get_added_lines_for_tracked_file(path: str):
-    lines = []
+    """Return [(real_file_line_number, content), ...] for every added line
+    in the unstaged + staged diff of `path`, by parsing the `@@ -a,b +c,d @@`
+    hunk headers rather than just enumerating collected "+" lines (which
+    would report the Nth added line as if it were the file's line number —
+    wrong for any file with more than one hunk, or any hunk not starting at
+    line 1)."""
+    result = []
     for diff_args in (
         ["diff", "--unified=0", "--", path],
         ["diff", "--cached", "--unified=0", "--", path],
@@ -292,19 +316,32 @@ def get_added_lines_for_tracked_file(path: str):
         code, out = git(diff_args)
         if code != 0:
             continue
+        current_line = None
         for line in out.splitlines():
             if line.startswith("+++") or line.startswith("---"):
                 continue
+            if line.startswith("@@"):
+                match = _HUNK_HEADER_RE.match(line)
+                current_line = int(match.group(1)) if match else None
+                continue
             if line.startswith("+"):
-                lines.append(line[1:])
-    return lines
+                result.append((current_line, line[1:]))
+                if current_line is not None:
+                    current_line += 1
+            elif line.startswith("-"):
+                continue
+            elif current_line is not None:
+                # Context line (shouldn't normally appear with --unified=0,
+                # but keep line-number tracking correct if one does).
+                current_line += 1
+    return result
 
 
 def get_lines_for_untracked_file(path: str):
     abs_path = os.path.join(REPO_ROOT, path)
     try:
         with open(abs_path, "r", encoding="utf-8", errors="ignore") as fh:
-            return fh.readlines()
+            return list(enumerate(fh.readlines(), start=1))
     except Exception:
         return []
 
@@ -353,13 +390,13 @@ def scan_changed_files_for_placeholders(changed_files):
         if ext not in CODE_EXTENSIONS:
             continue
         is_untracked = status.strip() == "??"
-        lines = (
+        numbered_lines = (
             get_lines_for_untracked_file(path)
             if is_untracked
             else get_added_lines_for_tracked_file(path)
         )
-        for idx, line in enumerate(lines, start=1):
-            scan_line_for_placeholders(line, path, idx, findings)
+        for line_no, line in numbered_lines:
+            scan_line_for_placeholders(line, path, line_no if line_no is not None else "?", findings)
     return findings
 
 
@@ -380,7 +417,7 @@ def main() -> None:
             print(json.dumps({}))
             return
 
-        code, porcelain = git(["status", "--porcelain"])
+        code, porcelain = git(["status", "--porcelain", "--untracked-files=all"])
         if code != 0 or not porcelain.strip():
             print(json.dumps({}))
             return
