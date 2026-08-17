@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
+import type { StackScreenProps } from '@react-navigation/stack'
 import { useAuth } from '../context/AuthContext'
+import type { AuthStackParamList } from '../navigation/AuthNavigator'
 
-export function SignupScreen({ navigation }: any) {
+type Props = StackScreenProps<AuthStackParamList, 'Signup'>
+
+export function SignupScreen({ navigation }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [businessName, setBusinessName] = useState('')
